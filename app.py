@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template
 from models.db import mysql
 import config
@@ -56,5 +57,5 @@ def create_app():            # Factory function to create Flask app
 app = create_app()
 
 if __name__ == "__main__":
-    print(app.url_map)   # 🔥 check routes here
-    app.run(debug=True, host='localhost', port=5000)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
