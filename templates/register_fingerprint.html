@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Fingerprint</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .info { background: #dbeafe; }
+        .success { background: #d1fae5; }
+        .error { background: #fee2e2; }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>Register Fingerprint</h2>
+
+    <!-- USERNAME INPUT -->
+    <input type="text" id="username" placeholder="Enter username/email" />
+
+    <button onclick="registerFingerprint()">Register with Fingerprint</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+
+/* ================= STATUS ================= */
+function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    if (!el) {
+        console.log(msg);
+        return;
+    }
+    el.innerText = msg;
+    el.className = type;
+}
+
+/* ================= BASE64 ================= */
+function b64url_to_buffer(b64) {
+    if (!b64) return null;
+    b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+}
+
+function buffer_to_b64url(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g,'-')
+        .replace(/\//g,'_')
+        .replace(/=/g,'');
+}
+
+/* ================= REGISTER ================= */
+async function registerFingerprint() {
+
+    console.log("Register Clicked");
+
+    if (!window.PublicKeyCredential) {
+        alert("WebAuthn not supported");
+        return;
+    }
+
+    const username = document.getElementById("username").value.trim();
+
+    if (!username) {
+        alert("Enter username first");
+        return;
+    }
+
+    setStatus("Contacting server...", "info");
+
+    let options;
+
+    try {
+        const res = await fetch('/webauthn/register/options', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username })
+        });
+
+        options = await res.json();
+        console.log("OPTIONS:", options);
+
+        if (options.error) {
+            setStatus(options.error, 'error');
+            return;
+        }
+
+    } catch (e) {
+        setStatus("Server error: " + e.message, "error");
+        return;
+    }
+
+    /* Convert */
+    options.challenge = b64url_to_buffer(options.challenge);
+    options.user.id = b64url_to_buffer(options.user.id);
+
+    if (options.excludeCredentials) {
+        options.excludeCredentials = options.excludeCredentials.map(c => ({
+            ...c,
+            id: b64url_to_buffer(c.id)
+        }));
+    }
+
+    setStatus("Scan your fingerprint...", "info");
+
+    let credential;
+
+    try {
+        credential = await navigator.credentials.create({
+            publicKey: options
+        });
+
+        console.log("CREDENTIAL:", credential);
+
+    } catch (e) {
+        setStatus("Fingerprint failed: " + e.message, "error");
+        return;
+    }
+
+    const payload = {
+        id: credential.id,
+        rawId: buffer_to_b64url(credential.rawId),
+        type: credential.type,
+        response: {
+            clientDataJSON: buffer_to_b64url(credential.response.clientDataJSON),
+            attestationObject: buffer_to_b64url(credential.response.attestationObject)
+        }
+    };
+
+    setStatus("Saving fingerprint...", "info");
+
+    try {
+        const res = await fetch('/webauthn/register/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        console.log("VERIFY:", result);
+
+        if (result.status === "registered") {
+            setStatus("✅ Registered Successfully!", "success");
+
+            setTimeout(() => {
+                window.location.href = "/fingerprint-login";
+            }, 1500);
+
+        } else {
+            setStatus(result.error || "Registration failed", "error");
+        }
+
+    } catch (e) {
+        setStatus("Network error: " + e.message, "error");
+    }
+}
+
+</script>
+
+</body>
+</html>

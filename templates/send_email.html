@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Send Email</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <h2>📧 Send Email</h2>
+
+    <form method="POST">
+
+        <!-- Sender INSIDE BOX -->
+        <label for="sender">Select Sender</label>
+        <select id="sender" name="sender">
+            {% for s in senders %}
+                <option value="{{ s[0] }}">{{ s[0] }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="email">Receiver Email</label>
+        <input id="email" name="email" placeholder="Enter receiver email">
+
+        <label for="subject">Subject</label>
+        <input id="subject" name="subject" placeholder="Enter subject">
+
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Write your message..."></textarea>
+
+        <label for="time">Schedule (Optional)</label>
+        <input type="datetime-local" id="time" name="time">
+
+        <button type="submit">Send Email</button>
+
+    </form>
+</div>
+
+</body>
+</html>

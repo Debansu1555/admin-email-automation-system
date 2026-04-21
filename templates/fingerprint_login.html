@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Fingerprint Login</title>
+</head>
+
+<body>
+
+<h2>Fingerprint Login</h2>
+
+<input type="text" id="username" placeholder="Enter your username" />
+<button onclick="startFingerprintLogin()">Login with Fingerprint</button>
+
+<script>
+
+/* ================= BASE64 ================= */
+function b64url_to_buffer(b64) {
+    if (!b64) return null;
+    b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+}
+
+function buffer_to_b64url(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g,'-')
+        .replace(/\//g,'_')
+        .replace(/=/g,'');
+}
+
+/* ================= LOGIN ================= */
+async function startFingerprintLogin() {
+
+    console.log("Login clicked");
+
+    if (!window.PublicKeyCredential) {
+        alert("WebAuthn not supported in this browser");
+        return;
+    }
+
+    const username = document.getElementById('username').value.trim();
+
+    if (!username) {
+        alert('Enter username first');
+        return;
+    }
+
+    /* ================= STEP 1 ================= */
+    let options;
+
+    try {
+        const res = await fetch('/webauthn/login/options', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username })
+        });
+
+        options = await res.json();
+        console.log("OPTIONS:", options);
+
+        if (!options || options.error) {
+            alert(options?.error || "Invalid server response");
+            return;
+        }
+
+    } catch (e) {
+        alert('Server error: ' + e.message);
+        return;
+    }
+
+    /* ================= CONVERT ================= */
+    try {
+        options.challenge = b64url_to_buffer(options.challenge);
+
+        if (options.allowCredentials) {
+            options.allowCredentials = options.allowCredentials.map(c => ({
+                ...c,
+                id: b64url_to_buffer(c.id)
+            }));
+        }
+
+    } catch (e) {
+        alert("Conversion error: " + e.message);
+        return;
+    }
+
+    /* ================= STEP 2 ================= */
+    let assertion;
+
+    try {
+        assertion = await navigator.credentials.get({
+            publicKey: options
+        });
+
+        console.log("ASSERTION:", assertion);
+
+    } catch (e) {
+        alert('Fingerprint failed: ' + e.message);
+        return;
+    }
+
+    /* ================= STEP 3 ================= */
+    const payload = {
+        id: assertion.id,
+        rawId: buffer_to_b64url(assertion.rawId),
+        type: assertion.type,
+        response: {
+            clientDataJSON: buffer_to_b64url(assertion.response.clientDataJSON),
+            authenticatorData: buffer_to_b64url(assertion.response.authenticatorData),
+            signature: buffer_to_b64url(assertion.response.signature),
+            userHandle: assertion.response.userHandle
+                ? buffer_to_b64url(assertion.response.userHandle)
+                : null
+        }
+    };
+
+    try {
+        const res = await fetch('/webauthn/login/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        console.log("RESULT:", result);
+
+        /* ✅ FINAL FIX */
+        if (result.status === 'logged_in') {
+            alert("✅ Login successful");
+
+            // 🔥 USE BACKEND REDIRECT (BEST)
+            if (result.redirect) {
+                window.location.href = result.redirect;
+            } else {
+                window.location.href = "/super_dashboard"; // fallback
+            }
+
+        } else {
+            alert(result.error || "Login failed");
+        }
+
+    } catch (e) {
+        alert('Network error: ' + e.message);
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Admin Login</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 15px;
+      width: 350px;
+      color: #000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #00c6ff;
+      border: none;
+      color: black;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #0072ff;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .info {
+      font-size: 12px;
+      text-align: center;
+      margin-top: 10px;
+      color: #222;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <h2>Super Admin Login</h2>
+
+  <form method="POST" action="/">
+    <input type="email" name="email" placeholder="Enter Email" required>
+    <input type="password" name="password" placeholder="Enter Password" required>
+
+    <select name="login_type" required>
+      <option value="">Select Authentication</option>
+      <option value="otp">OTP</option>
+      <option value="face">Face Recognition</option>
+      <option value="fingerprint">Fingerprint</option>
+    </select>
+
+    <button type="submit">Login</button>
+  </form>
+
+  <div class="info">
+    Choose one authentication method to continue
+  </div>
+</div>
+
+</body>
+</html>

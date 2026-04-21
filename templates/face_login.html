@@ -1,0 +1,37 @@
+<h2 style="text-align:center;">Face Login</h2>
+
+<div style="text-align:center;">
+  <video id="video" width="300" autoplay></video><br><br>
+  <button onclick="capture()">Capture & Login</button>
+</div>
+
+<form id="faceForm" method="POST" action="/verify-face" enctype="multipart/form-data">
+  <input type="file" id="imageInput" name="image" hidden>
+</form>
+
+<script>
+(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('video').srcObject = stream;
+})();
+
+function capture() {
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob(function(blob) {
+        const file = new File([blob], "face.jpg");
+
+        const dt = new DataTransfer();
+        dt.items.add(file);
+
+        document.getElementById('imageInput').files = dt.files;
+        document.getElementById('faceForm').submit();
+    });
+}
+</script>

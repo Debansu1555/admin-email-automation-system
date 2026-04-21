@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Create Sub Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Create Sub Admin</h2>
+
+    <form method="POST">
+
+        <label for="name">Name</label>
+        <input id="name" name="name" placeholder="Enter name">
+
+        <label for="email">Email</label>
+        <input id="email" name="email" placeholder="Enter email">
+
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" placeholder="Enter password">
+
+        <label for="position">Position</label>
+        <input id="position" name="position" placeholder="Enter position">
+
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" placeholder="Enter phone">
+
+        <button type="submit">Create</button>
+
+    </form>
+</div>
+
+</body>
+</html>
